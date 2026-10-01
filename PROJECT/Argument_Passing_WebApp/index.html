@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argument Passing — Linux Command-Line Simulator</title>
+  <style>
+    :root {
+      --bg: #0B1120;
+      --card: #111827;
+      --card-border: #1F2937;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --secondary: #06B6D4;
+      --accent: #38BDF8;
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --success: #22C55E;
+      --terminal: #030712;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      --font-mono: "Fira Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      padding: 24px 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(6, 182, 212, 0.12);
+      color: var(--secondary);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--secondary);
+      font-family: var(--font-mono);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Forms */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    @media(max-width: 650px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+    .form-group { margin-bottom: 12px; }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: var(--terminal);
+      border: 1px solid #374151;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: all 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+    }
+
+    /* Presets */
+    .presets-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding: 10px 12px;
+      background: rgba(3, 7, 18, 0.5);
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+    }
+    .preset-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .preset-btn {
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #E2E8F0;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.15s;
+    }
+    .preset-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #FFFFFF;
+    }
+
+    /* Action Buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+    .btn-demo {
+      background: #083344;
+      color: var(--secondary);
+      border: 1px solid #0891B2;
+    }
+    .btn-demo:hover {
+      background: #0e4c63;
+      color: #FFFFFF;
+    }
+    .btn-clear {
+      background: #1F2937;
+      color: var(--muted);
+      border: 1px solid #374151;
+    }
+    .btn-clear:hover {
+      background: #374151;
+      color: #FFFFFF;
+    }
+
+    /* Visual Execution Flow */
+    .flow-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow-x: auto;
+      padding: 12px 6px;
+      gap: 4px;
+    }
+    .flow-node {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 10px 8px;
+      text-align: center;
+      flex: 1;
+      min-width: 100px;
+      transition: all 0.3s;
+    }
+    .flow-node.active {
+      background: var(--primary);
+      border-color: var(--accent);
+      transform: scale(1.06);
+      box-shadow: 0 0 14px rgba(37, 99, 235, 0.6);
+    }
+    .flow-node .node-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+    }
+    .flow-node .node-sub {
+      font-size: 8px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .flow-arrow {
+      color: var(--secondary);
+      font-size: 14px;
+      font-weight: bold;
+      padding: 0 2px;
+      user-select: none;
+    }
+
+    /* Output Grid */
+    .output-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media(max-width: 600px) {
+      .output-grid { grid-template-columns: 1fr; }
+    }
+    .stat-box {
+      background: var(--terminal);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 14px;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+    .stat-val-cmd {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--success);
+      font-weight: 700;
+      word-break: break-all;
+    }
+    .stat-val-argc {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      color: var(--secondary);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    /* Vector Table */
+    .table-container {
+      background: var(--terminal);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      background: #0F172A;
+      color: var(--muted);
+      border-bottom: 1px solid var(--card-border);
+      font-size: 11px;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #161F30;
+    }
+    tr:last-child td { border-bottom: none; }
+    .td-idx {
+      color: var(--secondary);
+      font-weight: 700;
+      width: 120px;
+    }
+    .td-val {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .td-addr {
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .td-null {
+      color: #F59E0B;
+      font-style: italic;
+    }
+
+    /* Terminal Console */
+    .terminal-window {
+      background: var(--terminal);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .terminal-header {
+      background: #1E293B;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-red { background: #EF4444; }
+    .dot-yellow { background: #F59E0B; }
+    .dot-green { background: #10B981; }
+    .terminal-title {
+      color: var(--muted);
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .terminal-body {
+      padding: 14px;
+      color: #E2E8F0;
+      max-height: 220px;
+      overflow-y: auto;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+    .terminal-prompt-line {
+      display: flex;
+      align-items: center;
+      padding: 8px 14px;
+      background: #080D1A;
+      border-top: 1px solid var(--card-border);
+    }
+    .prompt-label {
+      color: var(--success);
+      font-weight: 700;
+      margin-right: 6px;
+      font-size: 12px;
+    }
+    .terminal-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <header class="header">
+      <div class="badge">LINUX SYSTEMS PROGRAMMING</div>
+      <h1>ARGUMENT PASSING</h1>
+      <p class="sub">Interactive Command-Line Argument Passing & Process Stack Simulator</p>
+    </header>
+
+    <!-- Interactive Simulator Card -->
+    <div class="card">
+      <div class="card-title">⚙️ ARGUMENT PASSING SIMULATOR</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Program Name (argv[0]):</label>
+          <input type="text" id="progName" value="program" placeholder="e.g. program">
+        </div>
+        <div class="form-group">
+          <label>Command-Line Arguments:</label>
+          <input type="text" id="argsInput" value="hello world 123" placeholder="e.g. hello world 123">
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="presets-row">
+        <span class="preset-label">QUICK PRESETS:</span>
+        <button class="preset-btn" onclick="applyPreset('hello')">hello</button>
+        <button class="preset-btn" onclick="applyPreset('hello world')">hello world</button>
+        <button class="preset-btn" onclick="applyPreset('10 20 30')">10 20 30</button>
+        <button class="preset-btn" onclick="applyPreset('alpha beta gamma')">alpha beta gamma</button>
+        <button class="preset-btn" onclick="applyPreset('-v --debug input.txt')">-v --debug</button>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runSimulator()">▶ Run Argument Passing</button>
+        <button class="btn btn-demo" onclick="runDemoMode()">✨ Interactive Demo</button>
+        <button class="btn btn-clear" onclick="clearFields()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Visual Execution Flow -->
+    <div class="card">
+      <div class="card-title">🔄 VISUAL EXECUTION FLOW</div>
+      <div class="flow-wrapper">
+        <div class="flow-node" id="fn-0">
+          <div class="node-title">USER INPUT</div>
+          <div class="node-sub">Terminal Keys</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-1">
+          <div class="node-title">COMMAND LINE</div>
+          <div class="node-sub">String Buffer</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-2">
+          <div class="node-title">LINUX SHELL</div>
+          <div class="node-sub">Bash Tokenizer</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-3">
+          <div class="node-title">PROCESS CREATION</div>
+          <div class="node-sub">fork() + execve()</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-4">
+          <div class="node-title">argc / argv</div>
+          <div class="node-sub">Stack Frame</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-5">
+          <div class="node-title">C PROGRAM</div>
+          <div class="node-sub">main() Loop</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-6">
+          <div class="node-title">OUTPUT</div>
+          <div class="node-sub">stdout Flush</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Section -->
+    <div class="card">
+      <div class="card-title">📊 ARGUMENT PASSING RESULT</div>
+
+      <div class="output-grid">
+        <div class="stat-box">
+          <div class="stat-label">GENERATED COMMAND:</div>
+          <div class="stat-val-cmd" id="outCmd">./program hello world 123</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">ARGUMENT COUNT (argc):</div>
+          <div class="stat-val-argc" id="outArgc">4</div>
+        </div>
+      </div>
+
+      <div class="stat-label" style="color: var(--secondary); margin-bottom: 8px;">ARGUMENT VECTOR (argv[]) STACK ARRAY:</div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Argument Value</th>
+              <th>Data Type / Format</th>
+              <th>Memory Pointer Address (Simulated)</th>
+            </tr>
+          </thead>
+          <tbody id="argvTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Linux Terminal Simulator -->
+    <div class="card">
+      <div class="card-title">💻 LINUX TERMINAL SIMULATION</div>
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <span class="terminal-title">bash terminal</span>
+        </div>
+        <div class="terminal-body" id="termLog">student@linux:~$ gcc -o program program.c -Wall
+[Compilation successful: binary 'program' built]
+student@linux:~$ ./program hello world 123
+====================================================================
+        ARGUMENT PASSING - OS & SYSTEMS PROGRAMMING                 
+====================================================================
+Argument Count (argc): 4
+--------------------------------------------------------------------
+INDEX    ARGUMENT VALUE     DATA TYPE / FORMAT     MEMORY POINTER    
+--------------------------------------------------------------------
+argv[0 ]  ./program          Executable (9 chars)   0x7ffeefbff560
+argv[1 ]  hello              String (5 chars)       0x7ffeefbff56a
+argv[2 ]  world              String (5 chars)       0x7ffeefbff570
+argv[3 ]  123                Number (int: 123)      0x7ffeefbff576
+--------------------------------------------------------------------
+POSIX Verification: argv[4] is NULL (Standard Compliant)
+[SUCCESS] Received 3 user argument(s).
+====================================================================</div>
+        <div class="terminal-prompt-line">
+          <span class="prompt-label">student@linux:~$</span>
+          <input type="text" id="termCmdInput" class="terminal-input" placeholder="Type command (e.g. ./program test, cat, clear) and press Enter" onkeydown="handleTermKey(event)">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Live update on input keystroke
+    document.getElementById('progName').addEventListener('input', runSimulator);
+    document.getElementById('argsInput').addEventListener('input', runSimulator);
+
+    function applyPreset(val) {
+      document.getElementById('argsInput').value = val;
+      runSimulator();
+    }
+
+    function clearFields() {
+      document.getElementById('argsInput').value = '';
+      runSimulator();
+    }
+
+    async function triggerFlowAnimation() {
+      for (let i = 0; i < 7; i++) {
+        document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active'));
+        const node = document.getElementById('fn-' + i);
+        if (node) node.classList.add('active');
+        await new Promise(r => setTimeout(r, 90));
+      }
+      setTimeout(() => {
+        document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active'));
+      }, 500);
+    }
+
+    function parseTokens(raw) {
+      if (!raw) return [];
+      const tokens = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < raw.length; i++) {
+        const c = raw[i];
+        if (c === '"') {
+          inQuotes = !inQuotes;
+        } else if (c === ' ' && !inQuotes) {
+          if (current.trim()) tokens.push(current.trim());
+          current = '';
+        } else {
+          current += c;
+        }
+      }
+      if (current.trim()) tokens.push(current.trim());
+      return tokens;
+    }
+
+    function isNumeric(val) {
+      return /^-?\d+$/.test(val.trim());
+    }
+
+    function runSimulator() {
+      const prog = document.getElementById('progName').value.trim() || 'program';
+      const rawArgs = document.getElementById('argsInput').value.trim();
+      const args = parseTokens(rawArgs);
+
+      const argc = args.length + 1;
+      const fullCmd = `./${prog}` + (args.length > 0 ? ' ' + args.join(' ') : '');
+
+      document.getElementById('outCmd').innerText = fullCmd;
+      document.getElementById('outArgc').innerText = argc;
+
+      // Populate Table
+      const tbody = document.getElementById('argvTableBody');
+      tbody.innerHTML = '';
+
+      const allArgs = [`./${prog}`, ...args];
+      allArgs.forEach((argVal, idx) => {
+        const tr = document.createElement('tr');
+        const hexAddr = '0x7ffe' + (0x1000 + idx * 0x12).toString(16);
+
+        let displayValHtml = '';
+        let typeFormatHtml = '';
+
+        if (idx === 0) {
+          displayValHtml = `<span style="color: #F8FAFC; font-weight: 600;">./${prog}</span>`;
+          typeFormatHtml = `<span style="color: #06B6D4;">Executable (${argVal.length} chars)</span>`;
+        } else if (isNumeric(argVal)) {
+          displayValHtml = `<span style="color: #22C55E; font-weight: bold; font-size: 13px;">${argVal}</span>`;
+          typeFormatHtml = `<span style="color: #38BDF8; font-weight: bold; background: rgba(56, 189, 248, 0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.25);">Number / Integer (int)</span>`;
+        } else {
+          displayValHtml = `<span style="color: #F8FAFC; font-weight: 600;">"${argVal}"</span>`;
+          typeFormatHtml = `<span style="color: #94A3B8;">String (${argVal.length} chars)</span>`;
+        }
+
+        tr.innerHTML = `
+          <td class="td-idx">argv[${idx}]</td>
+          <td class="td-val">${displayValHtml}</td>
+          <td>${typeFormatHtml}</td>
+          <td class="td-addr">${hexAddr}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // POSIX NULL row
+      const nullTr = document.createElement('tr');
+      nullTr.innerHTML = `
+        <td class="td-idx" style="color: #94A3B8;">argv[${argc}]</td>
+        <td class="td-null">NULL (0x0)</td>
+        <td><span style="color: #F59E0B; font-size: 11px;">Sentinel Value (Standard)</span></td>
+        <td class="td-addr">POSIX Boundary</td>
+      `;
+      tbody.appendChild(nullTr);
+
+      triggerFlowAnimation();
+      updateTerminalLog(prog, args, argc);
+    }
+
+    function updateTerminalLog(prog, args, argc) {
+      const fullCmd = `./${prog}` + (args.length > 0 ? ' ' + args.join(' ') : '');
+      const log = document.getElementById('termLog');
+
+      let lines = `student@linux:~$ ${fullCmd}\n`;
+      lines += `====================================================================\n`;
+      lines += `        ARGUMENT PASSING - OS & SYSTEMS PROGRAMMING                 \n`;
+      lines += `====================================================================\n`;
+      lines += `Argument Count (argc): ${argc}\n`;
+      lines += `--------------------------------------------------------------------\n`;
+      lines += `INDEX    ARGUMENT VALUE     DATA TYPE / FORMAT     MEMORY POINTER    \n`;
+      lines += `--------------------------------------------------------------------\n`;
+      
+      const all = [`./${prog}`, ...args];
+      all.forEach((val, idx) => {
+        const hexAddr = '0x7ffe' + (0x1000 + idx * 0x12).toString(16);
+        let desc = '';
+        if (idx === 0) desc = `Executable (${val.length} chars)`;
+        else if (isNumeric(val)) desc = `Number (int: ${val})`;
+        else desc = `String (${val.length} chars)`;
+        lines += `argv[${idx.toString().padEnd(2)}]  ${val.padEnd(18)} ${desc.padEnd(22)} ${hexAddr}\n`;
+      });
+      lines += `--------------------------------------------------------------------\n`;
+      lines += `POSIX Verification: argv[${argc}] is NULL (Standard Compliant)\n`;
+      lines += `[SUCCESS] Received ${args.length} user argument(s).\n`;
+      lines += `====================================================================`;
+
+      log.innerText = lines;
+    }
+
+    function handleTermKey(e) {
+      if (e.key === 'Enter') {
+        const cmd = e.target.value.trim();
+        e.target.value = '';
+        if (!cmd) return;
+
+        const log = document.getElementById('termLog');
+        if (cmd === 'clear') {
+          log.innerText = '';
+          return;
+        }
+
+        log.innerText += `\nstudent@linux:~$ ${cmd}\n`;
+        if (cmd.startsWith('./program')) {
+          const parts = cmd.split(' ').slice(1);
+          document.getElementById('argsInput').value = parts.join(' ');
+          runSimulator();
+        } else if (cmd === 'ls' || cmd === 'ls -la') {
+          log.innerText += `-rwxr-xr-x 1 student student 33480 Sep 29 08:30 program\n-rw-r--r-- 1 student student  2638 Sep 29 08:30 program.c\n-rw-r--r-- 1 student student  8697 Sep 29 08:30 Makefile\n`;
+        } else if (cmd === 'cat program.c') {
+          log.innerText += `#include <stdio.h>\nint main(int argc, char *argv[]) {\n    printf("argc: %d\\n", argc);\n    for(int i=0; i<argc; i++) printf("argv[%d] = %s\\n", i, argv[i]);\n    return 0;\n}\n`;
+        } else {
+          log.innerText += `Executed: ${cmd}\n`;
+        }
+        log.scrollTop = log.scrollHeight;
+      }
+    }
+
+    async function runDemoMode() {
+      const demoCases = [
+        "hello",
+        "hello world",
+        "alpha beta gamma"
+      ];
+      for (const c of demoCases) {
+        document.getElementById('argsInput').value = c;
+        runSimulator();
+        await new Promise(r => setTimeout(r, 1200));
+      }
+    }
+
+    // Run automatically on initial page load
+    window.onload = runSimulator;
+  </script>
+</body>
+</html>

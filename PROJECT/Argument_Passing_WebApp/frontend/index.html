@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argument Passing — Linux Command-Line Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <header class="header">
+      <div class="badge">LINUX SYSTEMS PROGRAMMING</div>
+      <h1>ARGUMENT PASSING</h1>
+      <p class="sub">Interactive Command-Line Argument Passing & Process Stack Simulator</p>
+    </header>
+
+    <!-- Interactive Simulator Card -->
+    <div class="card">
+      <div class="card-title">⚙️ ARGUMENT PASSING SIMULATOR</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Program Name (argv[0]):</label>
+          <input type="text" id="progName" value="program" placeholder="e.g. program">
+        </div>
+        <div class="form-group">
+          <label>Command-Line Arguments:</label>
+          <input type="text" id="argsInput" value="hello world 123" placeholder="e.g. hello world 123">
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="presets-row">
+        <span class="preset-label">QUICK PRESETS:</span>
+        <button class="preset-btn" onclick="applyPreset('hello')">hello</button>
+        <button class="preset-btn" onclick="applyPreset('hello world')">hello world</button>
+        <button class="preset-btn" onclick="applyPreset('10 20 30')">10 20 30</button>
+        <button class="preset-btn" onclick="applyPreset('alpha beta gamma')">alpha beta gamma</button>
+        <button class="preset-btn" onclick="applyPreset('-v --debug input.txt')">-v --debug</button>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="runSimulator()">▶ Run Argument Passing</button>
+        <button class="btn btn-demo" onclick="runDemoMode()">✨ Interactive Demo</button>
+        <button class="btn btn-clear" onclick="clearFields()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Visual Execution Flow -->
+    <div class="card">
+      <div class="card-title">🔄 VISUAL EXECUTION FLOW</div>
+      <div class="flow-wrapper">
+        <div class="flow-node" id="fn-0">
+          <div class="node-title">USER INPUT</div>
+          <div class="node-sub">Terminal Keys</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-1">
+          <div class="node-title">COMMAND LINE</div>
+          <div class="node-sub">String Buffer</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-2">
+          <div class="node-title">LINUX SHELL</div>
+          <div class="node-sub">Bash Tokenizer</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-3">
+          <div class="node-title">PROCESS CREATION</div>
+          <div class="node-sub">fork() + execve()</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-4">
+          <div class="node-title">argc / argv</div>
+          <div class="node-sub">Stack Frame</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-5">
+          <div class="node-title">C PROGRAM</div>
+          <div class="node-sub">main() Loop</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" id="fn-6">
+          <div class="node-title">OUTPUT</div>
+          <div class="node-sub">stdout Flush</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output Section -->
+    <div class="card">
+      <div class="card-title">📊 ARGUMENT PASSING RESULT</div>
+
+      <div class="output-grid">
+        <div class="stat-box">
+          <div class="stat-label">GENERATED COMMAND:</div>
+          <div class="stat-val-cmd" id="outCmd">./program hello world 123</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">ARGUMENT COUNT (argc):</div>
+          <div class="stat-val-argc" id="outArgc">4</div>
+        </div>
+      </div>
+
+      <div class="stat-label" style="color: var(--secondary); margin-bottom: 8px;">ARGUMENT VECTOR (argv[]) STACK ARRAY:</div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Argument Value</th>
+              <th>Data Type / Format</th>
+              <th>Memory Pointer Address (Simulated)</th>
+            </tr>
+          </thead>
+          <tbody id="argvTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="stat-label" style="color: var(--muted); margin-top: 14px; margin-bottom: 6px;">C PROGRAM EXECUTION STDOUT:</div>
+      <div class="stdout-box" id="cStdoutBox">Click "Run Argument Passing" to execute.</div>
+    </div>
+
+    <!-- Linux Terminal Simulator -->
+    <div class="card">
+      <div class="card-title">💻 LINUX TERMINAL SIMULATION</div>
+      <div class="terminal-window">
+        <div class="terminal-header">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <span class="terminal-title">bash terminal</span>
+        </div>
+        <div class="terminal-body" id="termLog">student@linux:~$ gcc -o program program.c -Wall
+[Compilation successful: binary 'program' built]
+student@linux:~$ ./program hello world 123
+====================================================
+      ARGUMENT PASSING - OS & SYSTEMS PROGRAMMING   
+====================================================
+Argument Count (argc): 4
+----------------------------------------------------
+argv[0 ]  ./program            9 chars      0x7ffeefbff560
+argv[1 ]  hello                5 chars      0x7ffeefbff56a
+argv[2 ]  world                5 chars      0x7ffeefbff570
+argv[3 ]  123                  3 chars      0x7ffeefbff576
+----------------------------------------------------
+POSIX Verification: argv[4] is NULL (Standard Compliant)
+[SUCCESS] Received 3 user argument(s).
+====================================================</div>
+        <div class="terminal-prompt-line">
+          <span class="prompt-label">student@linux:~$</span>
+          <input type="text" id="termCmdInput" class="terminal-input" placeholder="Type command (e.g. ./program test, cat, clear) and press Enter">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
