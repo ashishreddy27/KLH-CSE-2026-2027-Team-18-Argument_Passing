@@ -1,58 +1,72 @@
-# ARGUMENT PASSING — FULL-STACK WEB APPLICATION
-### Systems Programming / Linux Command-Line Simulator
+# Argument Passing
 
-This folder contains the complete **Frontend** and **Backend** architecture for the Argument Passing web application.
+## Project Title
 
----
+**Argument Passing — Operating Systems and Systems Programming**
 
-## Folder Structure
+A web-based application that demonstrates argument passing in C using `argc` and `argv`, with a Python backend and web frontend.
 
-```
-argument-passing-web/
-├── frontend/             # Frontend Client Application
-│   ├── index.html        # Clean HTML user interface
-│   ├── style.css         # Modern dark technical stylesheet
-│   └── script.js         # Interactive controller & API caller
-│
-├── backend/              # Backend Application & System Program
-│   ├── server.py         # Python REST API server (serves frontend & executes C)
-│   ├── program.c         # Core C source program (argc & argv parser)
-│   └── Makefile          # GCC build targets
-│
-├── run.py                # Python root launcher
-├── run.sh                # Shell root launcher
-└── README.md             # Project documentation
-```
+## Team Members
 
----
+| S.No | Name | Roll Number |
+|------|------|-------------|
+| 1 | V Ashish Reddy | 2520030415 |
+| 2 | Shaik Juneeth | 2520030435 |
+| 3 | Venkata Mahith | 2520030497 |
 
-## How to Run in VS Code
+## System Architecture
 
-### 1. Open the Project Folder in VS Code
-Go to **File $\rightarrow$ Open Folder...** and choose:
-```
-/Users/ashishreddy/.gemini/antigravity/scratch/argument-passing-web
-```
+```text
+                ┌─────────────────────┐
+                │       User          │
+                └──────────┬──────────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │   Web Frontend      │
+                │   HTML / CSS / JS   │
+                └──────────┬──────────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │   Python Backend    │
+                │      Server         │
+                └──────────┬──────────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │      C Program      │
+                │  Argument Passing   │
+                │      argc / argv    │
+                └──────────┬──────────┘
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │       Output        │
+                │ Arguments / Results │
+                └─────────────────────┘
+cat PROJECT/Argument_Passing_WebApp/README.md
+    ## Objectives
 
-### 2. Run the Full-Stack Application (Backend + Frontend)
-Open the VS Code Terminal (`Ctrl + ~`) and run:
-```bash
-python3 run.py
-# or: ./run.sh
-```
-Then open your browser and navigate to:
-👉 **`http://localhost:5000`**
+- To understand argument passing in C.
+- To demonstrate the use of `argc` and `argv`.
+- To provide a web-based interface for the application.
+- To connect the frontend with the Python backend.
+- To execute the C program through the backend.
+- To display the processed arguments and results.
 
----
+## Expected Output
 
-## Alternative: Run Frontend or Backend Independently
+The application accepts arguments through the web interface and sends them to the backend.
 
-- **Frontend Only (Direct in Browser):**
-  Double-click `frontend/index.html` or open it with VS Code Live Server.
+The backend executes the C program with the provided arguments and displays the result on the webpage.
 
-- **Backend C Program Only (Direct in Linux Terminal):**
-  ```bash
-  cd backend
-  gcc -o program program.c -Wall
-  ./program hello world 123
-  ```
+The output includes the number of arguments received, the arguments passed, and the final execution result.
+
+## Conclusion
+
+The **Argument Passing** project demonstrates how command-line arguments are passed to a C program using `argc` and `argv`. It combines C programming, Python backend development, and web technologies to provide an interactive demonstration of an Operating Systems concept.
+
+## GitHub Repository
+
+https://github.com/ashishreddy27/KLH-CSE-2026-2027-Team-18-Argument_Passing
