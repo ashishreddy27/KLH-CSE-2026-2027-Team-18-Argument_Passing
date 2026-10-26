@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ThreadLog – Multi-threaded Log Analysis System</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--tx:#14213d;--mu:#5c6b8a;--bd:#dde3ef;--ac:#4361ee;--er:#e5383b;--wa:#f59e0b;--su:#9333ea;--ok:#16a34a;--code:#0f172a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1020;--card:#141b30;--tx:#e8ecf8;--mu:#97a3c2;--bd:#26304d;--ac:#7b8cff;--code:#05080f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1020;--card:#141b30;--tx:#e8ecf8;--mu:#97a3c2;--bd:#26304d;--ac:#7b8cff;--code:#05080f;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:linear-gradient(135deg,#3a0ca3,#4361ee 60%,#4cc9f0);color:#fff;padding:44px 20px 56px;text-align:center}
+header h1{margin:0 0 8px;font-size:clamp(26px,5vw,42px)}header p{margin:0 auto;max-width:700px;opacity:.92}
+.badge{display:inline-block;background:rgba(255,255,255,.18);padding:4px 12px;border-radius:99px;font-size:12px;margin-bottom:14px;letter-spacing:.5px}
+main{max-width:1100px;margin:-30px auto 40px;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+h2{margin:0 0 12px;font-size:19px}h3{margin:14px 0 6px;font-size:15px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.row>div{flex:1;min-width:160px}
+label{display:block;font-size:12px;color:var(--mu);margin-bottom:4px;font-weight:600}
+input[type=number],input[type=file],select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)}
+input[type=range]{width:100%}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;font-size:14px}
+button.sec{background:transparent;color:var(--ac);border:1px solid var(--ac)}button:disabled{opacity:.5;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.kpi{border:1px solid var(--bd);border-radius:12px;padding:12px;text-align:center}.kpi b{display:block;font-size:24px}.kpi span{font-size:12px;color:var(--mu)}
+.thr{display:grid;grid-template-columns:70px 1fr 110px;gap:10px;align-items:center;margin:6px 0;font-size:13px}
+.bar{height:12px;background:var(--bg);border:1px solid var(--bd);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4cc9f0,var(--ac));transition:width .15s}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.scroll{overflow-x:auto;max-height:340px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}th{position:sticky;top:0;background:var(--card)}
+.tag{padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;color:#fff}.ERROR,.CRITICAL{background:var(--er)}.WARN{background:var(--wa)}.SUSPICIOUS{background:var(--su)}
+canvas{width:100%;height:220px;display:block}
+pre{background:var(--code);color:#d6e2ff;padding:14px;border-radius:10px;overflow-x:auto;font-size:12.5px;line-height:1.5}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}.step{border:1px solid var(--bd);border-radius:12px;padding:12px}.step b{color:var(--ac)}
+.mu{color:var(--mu);font-size:13px}#status{font-size:13px;color:var(--mu);margin-top:10px}
+footer{text-align:center;color:var(--mu);font-size:13px;padding:10px 0 30px}
+.tb{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:14px;background:rgba(255,255,255,.2);padding:6px 10px}
+</style></head><body>
+<button class="tb" id="theme" aria-label="Toggle theme">◐</button>
+<header><div class="badge">OSSP PROJECT · OPERATING SYSTEMS</div>
+<h1>ThreadLog</h1><p>A multi-threaded log analysis system that splits large log files into chunks, processes them in parallel worker threads, and merges the results to reveal errors, warnings and suspicious events.</p></header>
+<main>
+<section class="card"><h2>1 · Configure &amp; Run</h2>
+<div class="row">
+<div><label>Log source</label><select id="src"><option value="gen">Generate sample logs</option><option value="file">Upload a log file</option></select></div>
+<div id="genBox"><label>Number of log lines</label><select id="lines"><option>50000</option><option>200000</option><option selected>500000</option><option>1000000</option></select></div>
+<div id="fileBox" style="display:none"><label>Log file (.log / .txt)</label><input type="file" id="file" accept=".log,.txt,text/plain"></div>
+<div><label>Worker threads: <span id="tv">4</span> <span class="mu">(CPU cores: <span id="cores">?</span>)</span></label><input type="range" id="threads" min="1" max="16" value="4"></div>
+<div><label>Chunk size (lines)</label><select id="chunk"><option>5000</option><option selected>20000</option><option>50000</option></select></div>
+</div>
+<div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button id="run">▶ Analyze</button><button class="sec" id="bench">⚡ Benchmark 1 thread vs N threads</button></div>
+<div id="status">Ready.</div></section>
+
+<section class="card" id="resCard" style="display:none"><h2>2 · Thread Activity</h2><div id="thr"></div>
+<div class="bar" style="margin-top:10px"><i id="total"></i></div><div class="mu" id="mode"></div></section>
+
+<section class="card" id="out" style="display:none"><h2>3 · Analysis Results</h2>
+<div class="kpis" id="kpis"></div>
+<div class="grid2" style="margin-top:18px"><div><h3>Events per hour</h3><canvas id="cv"></canvas><div class="mu"><span style="color:var(--er)">■</span> errors <span style="color:var(--wa)">■</span> warnings <span style="color:var(--su)">■</span> suspicious</div></div>
+<div><h3>Suspicious patterns detected</h3><div class="scroll" style="max-height:230px"><table id="pat"></table></div></div></div>
+<div class="grid2" style="margin-top:8px"><div><h3>Top offending IPs <span class="mu">(failed logins / suspicious)</span></h3><div class="scroll" style="max-height:230px"><table id="ips"></table></div></div>
+<div id="benchBox"><h3>Performance</h3><div id="perf" class="mu">Run the benchmark to compare 1 thread vs N threads.</div></div></div>
+<h3>Event explorer</h3><div class="row"><div><label>Filter type</label><select id="ft"><option value="">All</option><option>ERROR</option><option>CRITICAL</option><option>WARN</option><option>SUSPICIOUS</option></select></div><div><label>Search text</label><input type="text" id="fs" placeholder="e.g. timeout, 10.0.0.5" style="width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)"></div></div>
+<div class="scroll" style="margin-top:8px"><table id="ev"></table></div></section>
+
+<section class="card"><h2>How it works (OS concepts)</h2>
+<div class="steps">
+<div class="step"><b>1. Split</b><br>The file is divided into fixed-size chunks (the work units placed in a shared task queue).</div>
+<div class="step"><b>2. Parallel analyze</b><br>N worker threads pull chunks from the queue (producer–consumer) and scan lines with pattern rules.</div>
+<div class="step"><b>3. Synchronize</b><br>Each thread keeps private counters (no data races); the main thread merges them — the role a mutex plays in pthreads.</div>
+<div class="step"><b>4. Report</b><br>Merged totals feed charts, IP statistics and the event explorer.</div></div>
+<h3>Equivalent C (pthreads) design</h3>
+<pre>pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+Stats global;                       // shared result
+
+void *worker(void *arg) {
+    Chunk *c; Stats local = {0};
+    while ((c = queue_pop()) != NULL)      // thread-safe queue
+        for (char *ln = c-&gt;start; ln &lt; c-&gt;end; ln = next_line(ln))
+            classify(ln, &amp;local);          // ERROR / WARN / suspicious
+    pthread_mutex_lock(&amp;lock);             // critical section
+    merge(&amp;global, &amp;local);
+    pthread_mutex_unlock(&amp;lock);
+    return NULL;
+}
+// main: split file -> queue_push(chunks) -> pthread_create x N
+//       -> pthread_join x N -> print_report(&amp;global)</pre>
+<p class="mu">This site uses browser Web Workers (real OS threads) to mirror that design. Detection rules: failed login, brute force (≥5 failures per IP), SQL injection, path traversal, privilege escalation, port scan, and malware signatures.</p></section>
+</main><footer>ThreadLog · OSSP Project · Multi-threaded Log Analysis System</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+$('cores').textContent=navigator.hardwareConcurrency||'?';
+$('theme').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()==='#0b1020';r.dataset.theme=d?'light':'dark'};
+$('threads').oninput=e=>$('tv').textContent=e.target.value;
+$('src').onchange=e=>{const g=e.target.value==='gen';$('genBox').style.display=g?'':'none';$('fileBox').style.display=g?'none':''};
+
+// ---- analysis function (runs inside each worker thread) ----
+function analyze(text){
+  const S=[['Failed login',/failed (password|login)|authentication failure|invalid user/i],['SQL injection',/union select|or 1=1|drop table|' or '/i],['Path traversal',/\.\.\/|%2e%2e|\/etc\/passwd/i],['Privilege escalation',/sudo.*(fail|denied)|privilege escalat|root access/i],['Port scan',/port scan|syn flood|nmap/i],['Malware signature',/malware|trojan|ransom|c2 beacon/i]];
+  const ipRe=/\b\d{1,3}(?:\.\d{1,3}){3}\b/,lvRe=/\[(CRITICAL|ERROR|WARN|INFO|DEBUG)\]/;
+  const r={n:0,lv:{CRITICAL:0,ERROR:0,WARN:0,INFO:0,DEBUG:0},su:{},ips:{},hr:{},ev:[]};
+  let i=0,L=text.length;
+  while(i<L){
+    let j=text.indexOf('\n',i);if(j<0)j=L;
+    const ln=text.slice(i,j);i=j+1;if(!ln)continue;r.n++;
+    const m=lvRe.exec(ln),lv=m?m[1]:'INFO';r.lv[lv]++;
+    const ipm=ipRe.exec(ln),ip=ipm?ipm[0]:null,h=ln.slice(0,13);
+    let hb=r.hr[h]||(r.hr[h]=[0,0,0]);
+    if(lv==='ERROR'||lv==='CRITICAL')hb[0]++;else if(lv==='WARN')hb[1]++;
+    let sus=false,failed=false;
+    for(const [nm,re] of S){if(re.test(ln)){sus=true;r.su[nm]=(r.su[nm]||0)+1;if(nm==='Failed login')failed=true}}
+    if(sus)hb[2]++;
+    if(ip&&(sus||lv==='ERROR')){const o=r.ips[ip]||(r.ips[ip]=[0,0]);if(failed)o[0]++;if(sus)o[1]++}
+    if(r.ev.length<150&&(sus||lv!=='INFO'&&lv!=='DEBUG'))r.ev.push([sus?'SUSPICIOUS':lv,ln]);
+  }
+  return r;
+}
+const workerSrc=analyze.toString()+';self.onmessage=e=>{const r=analyze(e.data.text);postMessage({id:e.data.id,r:r})}';
+let blobURL=null;
+function makeWorker(){try{blobURL=blobURL||URL.createObjectURL(new Blob([workerSrc],{type:'text/javascript'}));return new Worker(blobURL)}catch(e){return null}}
+
+// ---- log generator ----
+function gen(n){
+  const att=['203.0.113.7','198.51.100.23','192.0.2.99'],pool=[];for(let i=0;i<60;i++)pool.push('10.0.'+(i%8)+'.'+(10+i));
+  const inf=['User logged in','Request served 200 OK','Cache refreshed','Backup completed','Session started','Health check passed'];
+  const wr=['Disk usage at 85%','Slow query detected','High memory usage','Retrying connection','Deprecated API call'];
+  const er=['Database timeout','Service unavailable 503','NullPointerException in handler','Connection refused','Out of memory'];
+  const su=['Failed password for root','Invalid user admin','GET /?id=1 UNION SELECT password','GET /../../etc/passwd','sudo: authentication failure, denied','Port scan detected','Malware signature matched','SQL injection: \' OR 1=1 --'];
+  const rnd=a=>a[Math.random()*a.length|0],out=[],t0=Date.UTC(2026,9,15,0,0,0),span=36*3600e3;
+  for(let i=0;i<n;i++){
+    const ts=new Date(t0+i/n*span).toISOString().slice(0,19).replace('T',' '),p=Math.random();let lv,msg,ip=rnd(pool);
+    if(p<.012){lv='ERROR';msg=rnd(su);ip=rnd(att)}else if(p<.02){lv='CRITICAL';msg=rnd(er)}else if(p<.05){lv='ERROR';msg=rnd(er)}else if(p<.13){lv='WARN';msg=rnd(wr)}else if(p<.135){lv='WARN';msg=rnd(su);ip=rnd(att)}else{lv='INFO';msg=rnd(inf)}
+    out.push(ts+' ['+lv+'] '+ip+' '+msg);
+  }
+  return out.join('\n');
+}
+
+// ---- parallel engine ----
+function mergeInto(g,r){
+  g.n+=r.n;for(const k in r.lv)g.lv[k]+=r.lv[k];for(const k in r.su)g.su[k]=(g.su[k]||0)+r.su[k];
+  for(const ip in r.ips){const o=g.ips[ip]||(g.ips[ip]=[0,0]);o[0]+=r.ips[ip][0];o[1]+=r.ips[ip][1]}
+  for(const h in r.hr){const o=g.hr[h]||(g.hr[h]=[0,0,0]);for(let i=0;i<3;i++)o[i]+=r.hr[h][i]}
+  for(const e of r.ev)if(g.ev.length<600)g.ev.push(e);
+}
+function run(text,T,csz,ui){
+  return new Promise(res=>{
+    const t0=performance.now(),lines=text.split('\n'),chunks=[];
+    for(let i=0;i<lines.length;i+=csz)chunks.push(lines.slice(i,i+csz).join('\n'));
+    const G={n:0,lv:{CRITICAL:0,ERROR:0,WARN:0,INFO:0,DEBUG:0},su:{},ips:{},hr:{},ev:[]};
+    let next=0,done=0,real=true;const tl=[];
+    if(ui){$('thr').innerHTML='';for(let t=0;t<T;t++){$('thr').insertAdjacentHTML('beforeend',`<div class="thr"><b>Thread ${t+1}</b><div class="bar"><i id="b${t}"></i></div><span id="s${t}">idle</span></div>`);tl.push({c:0,l:0})}}
+    const upd=t=>{if(!ui)return;const x=tl[t];$('b'+t).style.width=(x.c/Math.max(1,Math.ceil(chunks.length/T))*100)+'%';$('s'+t).textContent=x.c+' chunks · '+x.l.toLocaleString()+' ln';$('total').style.width=(done/chunks.length*100)+'%'};
+    const finish=()=>res({G,ms:performance.now()-t0,real,chunks:chunks.length});
+    const workers=[];for(let t=0;t<T;t++){const w=makeWorker();if(!w){real=false;break}workers.push(w)}
+    if(!real){workers.forEach(w=>w.terminate());
+      const step=()=>{if(next>=chunks.length)return finish();const id=next++,t=id%T,r=analyze(chunks[id]);mergeInto(G,r);done++;if(ui){tl[t].c++;tl[t].l+=r.n;upd(t)}setTimeout(step,0)};step();return}
+    workers.forEach((w,t)=>{
+      const feed=()=>{if(next<chunks.length){const id=next++;w.postMessage({id,text:chunks[id]})}else{w.terminate();if(done>=chunks.length&&!G._f){G._f=1;finish()}}};
+      w.onmessage=e=>{mergeInto(G,e.data.r);done++;if(ui){tl[t].c++;tl[t].l+=e.data.r.n;upd(t)}feed()};
+      w.onerror=()=>{};feed()});
+    if(!chunks.length)finish();
+  });
+}
+
+// ---- rendering ----
+let EV=[];
+function render(G,ms,real,T){
+  $('out').style.display='';
+  const tot=G.lv.ERROR+G.lv.CRITICAL,sus=Object.values(G.su).reduce((a,b)=>a+b,0);
+  const k=[['Lines',G.n.toLocaleString(),''],['Errors',tot.toLocaleString(),'var(--er)'],['Warnings',G.lv.WARN.toLocaleString(),'var(--wa)'],['Suspicious',sus.toLocaleString(),'var(--su)'],['Info',G.lv.INFO.toLocaleString(),'var(--ok)'],['Time',(ms/1000).toFixed(2)+'s','var(--ac)'],['Throughput',Math.round(G.n/ms*1000/1000)+'k ln/s','']];
+  $('kpis').innerHTML=k.map(x=>`<div class="kpi"><b style="color:${x[2]}">${x[1]}</b><span>${x[0]}</span></div>`).join('');
+  $('mode').textContent=real?'Mode: real parallel Web Workers ('+T+' threads)':'Mode: Web Workers unavailable here – cooperative simulation of '+T+' threads';
+  const sp=Object.entries(G.su).sort((a,b)=>b[1]-a[1]);
+  $('pat').innerHTML='<tr><th>Pattern</th><th>Hits</th></tr>'+(sp.map(([n,c])=>`<tr><td>${n}</td><td>${c.toLocaleString()}</td></tr>`).join('')||'<tr><td colspan=2>None found</td></tr>');
+  const ips=Object.entries(G.ips).sort((a,b)=>b[1][1]-a[1][1]).slice(0,10);
+  $('ips').innerHTML='<tr><th>IP</th><th>Failed</th><th>Susp.</th><th>Status</th></tr>'+ips.map(([ip,v])=>`<tr><td>${ip}</td><td>${v[0]}</td><td>${v[1]}</td><td>${v[0]>=5?'<span class="tag SUSPICIOUS">BRUTE FORCE</span>':v[1]>0?'<span class="tag WARN">WATCH</span>':'ok'}</td></tr>`).join('');
+  EV=G.ev;showEv();chart(G.hr);
+}
+function showEv(){
+  const f=$('ft').value,s=$('fs').value.toLowerCase();
+  const rows=EV.filter(e=>(!f||e[0]===f)&&(!s||e[1].toLowerCase().includes(s))).slice(0,150);
+  const esc=t=>t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  $('ev').innerHTML='<tr><th>Type</th><th>Log line</th></tr>'+(rows.map(e=>`<tr><td><span class="tag ${e[0]}">${e[0]}</span></td><td>${esc(e[1])}</td></tr>`).join('')||'<tr><td colspan=2>No matching events</td></tr>');
+}
+$('ft').onchange=showEv;$('fs').oninput=showEv;
+function chart(hr){
+  const cv=$('cv'),d=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;cv.width=w*d;cv.height=h*d;
+  const c=cv.getContext('2d');c.scale(d,d);c.clearRect(0,0,w,h);
+  const ks=Object.keys(hr).sort();if(!ks.length)return;
+  const st=getComputedStyle(document.documentElement),col=n=>st.getPropertyValue(n).trim(),mx=Math.max(...ks.map(k=>hr[k][0]+hr[k][1]+hr[k][2]),1);
+  const bw=(w-30)/ks.length;c.font='10px system-ui';c.fillStyle=col('--mu');
+  ks.forEach((k,i)=>{let y=h-22;[[0,'--er'],[1,'--wa'],[2,'--su']].forEach(([j,cn])=>{const bh=hr[k][j]/mx*(h-40);c.fillStyle=col(cn);c.fillRect(25+i*bw+1,y-bh,Math.max(1,bw-2),bh);y-=bh});
+    if(ks.length<=14||i%Math.ceil(ks.length/10)===0){c.fillStyle=col('--mu');c.fillText(k.slice(8),25+i*bw,h-8)}});
+  c.fillStyle=col('--mu');c.fillText(mx.toLocaleString(),0,10);
+}
+addEventListener('resize',()=>{});
+
+// ---- controls ----
+let logText='';
+async function getText(){
+  if($('src').value==='file'){const f=$('file').files[0];if(!f){alert('Please choose a log file first.');return null}return await f.text()}
+  $('status').textContent='Generating sample logs…';await new Promise(r=>setTimeout(r,30));return gen(+$('lines').value);
+}
+async function go(bench){
+  const txt=await getText();if(txt===null)return;
+  const T=+$('threads').value,csz=+$('chunk').value;
+  $('run').disabled=$('bench').disabled=true;$('resCard').style.display='';
+  try{
+    let base=null;
+    if(bench){$('status').textContent='Benchmark: running with 1 thread…';base=await run(txt,1,csz,true)}
+    $('status').textContent='Analyzing with '+T+' thread(s)…';
+    const r=await run(txt,T,csz,true);
+    render(r.G,r.ms,r.real,T);
+    $('status').textContent='Done: '+r.G.n.toLocaleString()+' lines in '+r.chunks+' chunks, '+(r.ms/1000).toFixed(2)+'s.';
+    if(base){const sp=base.ms/r.ms;$('perf').innerHTML=`<table><tr><th>Threads</th><th>Time</th><th>Speedup</th></tr><tr><td>1</td><td>${(base.ms/1000).toFixed(2)}s</td><td>1.00×</td></tr><tr><td>${T}</td><td>${(r.ms/1000).toFixed(2)}s</td><td><b>${sp.toFixed(2)}×</b></td></tr></table><p>${r.real?'Speedup is limited by CPU cores, chunk overhead and the serial merge step (Amdahl\'s law).':'Workers were unavailable, so threads were simulated and no real speedup is expected.'}</p>`}
+    $('out').scrollIntoView({behavior:'smooth'});
+  }catch(e){$('status').textContent='Error: '+e.message}
+  $('run').disabled=$('bench').disabled=false;
+}
+$('run').onclick=()=>go(false);$('bench').onclick=()=>go(true);
+</script></body></html>
